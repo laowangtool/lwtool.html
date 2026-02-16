@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+    <title>名称编辑器</title>
+    <style>
+        :root {
+            --bg-color: #05070a;
+            --panel-color: #10141b;
+            --border-width: 4px; /* 光圈的粗细 */
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: #fff;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+
+        .main-container {
+            display: flex;
+            flex-direction: column;
+            gap: 35px;
+            width: 420px;
+        }
+
+        h2 {
+            text-align: center;
+            font-weight: 200;
+            letter-spacing: 8px;
+            color: #4a5568;
+            margin-bottom: 5px;
+            font-size: 1.1rem;
+        }
+
+        /* --- 满溢流光容器核心 --- */
+        .glow-track-box {
+            position: relative;
+            border-radius: 16px; /* 圆角方框 */
+            z-index: 0;
+            padding: var(--border-width); /* 预留出光圈位置 */
+            overflow: hidden; /* 裁剪多余渐变 */
+            display: flex;
+        }
+
+        /* 旋转的填充渐变层 */
+        .glow-track-box::before {
+            content: '';
+            position: absolute;
+            z-index: -2;
+            left: -50%;
+            top: -50%;
+            width: 200%;
+            height: 200%;
+            /* 满填充的圆锥渐变，使用 2-3 种颜色循环实现流动感 */
+            background: conic-gradient(
+                var(--color-1), 
+                var(--color-2), 
+                var(--color-1)
+            );
+            animation: fullRotate 3s linear infinite;
+        }
+
+        /* 内部内容遮罩（确保光圈只在边框流动） */
+        .content-inner {
+            position: relative;
+            z-index: 1;
+            width: 100%;
+            background: var(--panel-color);
+            border-radius: 12px; /* 略小于外框圆角，保持等距感 */
+            padding: 24px;
+        }
+
+        @keyframes fullRotate {
+            100% { transform: rotate(360deg); }
+        }
+
+        /* 定义不同方框的流转配色（商务科技感配色） */
+        .box-name { --color-1: #00d2ff; --color-2: #3a7bd5; }
+        .box-color { --color-1: #9d50bb; --color-2: #6e48aa; }
+        .box-result { --color-1: #f2994a; --color-2: #f2c94c; }
+
+        /* UI 元素样式 */
+        .label-text {
+            display: block;
+            font-size: 10px;
+            color: #5c6b80;
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            background: #1a202c;
+            border: 1px solid #2d3748;
+            padding: 12px;
+            color: #fff;
+            border-radius: 6px;
+            outline: none;
+            box-sizing: border-box;
+            font-size: 14px;
+        }
+
+        .flex-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        #hexCode {
+            font-family: 'Courier New', monospace;
+            color: #a0aec0;
+            font-size: 14px;
+        }
+
+        input[type="color"] {
+            -webkit-appearance: none;
+            width: 45px; height: 30px; border: none; background: none; cursor: pointer;
+        }
+        input[type="color"]::-webkit-color-swatch { border-radius: 4px; border: 1px solid #4a5568; }
+
+        .output-preview {
+            display: block;
+            text-align: center;
+            font-family: 'Consolas', monospace;
+            font-size: 1.4rem;
+            margin-bottom: 20px;
+            text-shadow: 0 0 10px rgba(255,255,255,0.1);
+        }
+
+        .copy-button {
+            width: 100%;
+            padding: 14px;
+            background: #fff;
+            color: #05070a;
+            border: none;
+            border-radius: 6px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .copy-button:hover {
+            background: #cbd5e0;
+            transform: scale(0.99);
+        }
+
+        #copyToast {
+            position: fixed; top: 30px; 
+            background: #4a5568; color: #fff;
+            padding: 10px 25px; border-radius: 30px;
+            font-size: 13px; opacity: 0; pointer-events: none;
+            transition: 0.4s;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="copyToast">SUCCESS: PROTOCOL COPIED</div>
+
+    <div class="main-container">
+        <h2>✨老王独家彩色名称生成器✨💎老王WX：dm8889dm💎</h2>
+
+        <div class="glow-track-box box-name">
+            <div class="content-inner">
+                <span class="label-text">输入名称/ID</span>
+                <input type="text" id="nameIn" value="">
+            </div>
+        </div>
+
+        <div class="glow-track-box box-color">
+            <div class="content-inner">
+                <span class="label-text">选择颜色</span>
+                <div class="flex-row">
+                    <span id="hexCode">#00D2FF</span>
+                    <input type="color" id="colorIn" value="#00d2ff">
+                </div>
+            </div>
+        </div>
+
+        <div class="glow-track-box box-result">
+            <div class="content-inner">
+                <span class="label-text">修改结果</span>
+                <span id="resultPreview" class="output-preview">[00d2ff]Cyber_Executive</span>
+                <button class="copy-button" onclick="copyResult()">复制到剪切板</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const nameIn = document.getElementById('nameIn');
+        const colorIn = document.getElementById('colorIn');
+        const hexCode = document.getElementById('hexCode');
+        const resultPreview = document.getElementById('resultPreview');
+        const copyToast = document.getElementById('copyToast');
+
+        function update() {
+            const hex = colorIn.value.substring(1);
+            const name = nameIn.value || "User";
+            const fullCode = `[${hex}]${name}`;
+            
+            resultPreview.textContent = fullCode;
+            resultPreview.style.color = `#${hex}`;
+            hexCode.textContent = `#${hex.toUpperCase()}`;
+        }
+
+        function copyResult() {
+            navigator.clipboard.writeText(resultPreview.textContent).then(() => {
+                copyToast.style.opacity = '1';
+                setTimeout(() => copyToast.style.opacity = '0', 2000);
+            });
+        }
+
+        nameIn.addEventListener('input', update);
+        colorIn.addEventListener('input', update);
+        update();
+    </script>
+</body>
+</html>

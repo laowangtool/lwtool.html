@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>老王CPM工具箱</title>
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        background: url("https://i.postimg.cc/XYj6dDzv/IMG-0133.jpg") no-repeat center center fixed;
+        background-size: cover;
+        margin: 0;
+        padding: 0;
+        color: white;
+    }
+
+    .center-wrapper {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+    }
+
+    .container {
+        background: rgba(255, 255, 255, 0.2); 
+        backdrop-filter: blur(15px);
+        -webkit-backdrop-filter: blur(15px);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        padding: 20px 30px 10px 30px;
+        border-radius: 10px;
+        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        width: 295px;
+        text-align: center;
+    }
+
+    input {
+        width:85%;
+        padding:10px;
+        margin:8px 0;
+        border-radius:5px;
+        border:none;
+        background: rgba(255,255,255,0.1);
+        color:#fff;
+        outline: none;
+        text-align: center;
+    }
+
+    button {
+        width: 99%;
+        padding: 10px;
+        margin: 6px 0;
+        border-radius: 5px;
+        cursor: pointer;
+        background: rgba(255, 255, 255, 0.15); 
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.4);
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        color: #ffffff;
+        font-weight: bold;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+        transition: 0.3s;
+    }
+
+    button:hover { background: rgba(255, 255, 255, 0.25); }
+    .status { margin-top:10px; color:#0f0; word-wrap: break-word; font-size: 14px; min-height: 20px;}
+    .error { color:#f55; }
+    
+    #authForm, #loginForm, #menuButtons { display: none; }
+    footer { margin-top: 15px; font-size: 13px; color: #fff; opacity: 0.8; }
+</style>
+</head>
+<body>
+
+<div class="center-wrapper">
+  <div class="container">
+      <h1>👑老王工具箱👑</h1>
+
+      <div id="authForm">
+          <input type="text" id="cdkInput" placeholder="请输入激活码" />
+          <button onclick="verifyCDK()">激活工具</button>
+      </div>
+
+      <div id="loginForm">
+          <input type="email" id="email" placeholder="游戏邮箱" />
+          <input type="password" id="password" placeholder="游戏密码" />
+          <button onclick="loginFirebase()">验证登录</button>
+      </div>
+
+      <div id="menuButtons">
+          <button onclick="kingRank()">👑 一键皇冠等级</button>
+          <button onclick="changeEmail()">📧 修改邮箱</button>
+          <button onclick="changePassword()">🔐 修改密码</button>
+          <button style="background:rgba(255,165,0,0.2)" onclick="logout()">🚪 安全退出</button> 
+      </div>
+
+      <div id="status" class="status"></div>
+      <footer>© CPM老王版权所有</footer>
+  </div>
+</div>
+
+<script>
+let currentUser = null;
+let currentToken = null;
+
+const FIREBASE_API_KEY = "AIzaSyBW1ZbMiUeDZHYUO2bY8Bfnf5rRgrQGPTM";
+const RANK_URL = "https://us-central1-cp-multiplayer.cloudfunctions.net/SetUserRating4";
+const KEYS_URL = "/api/proxy"; 
+function updateStatus(message, isError=false) {
+    const status = document.getElementById('status');
+    status.className = isError ? 'status error' : 'status';
+    status.textContent = message;
+}
+
+// 激活逻辑：存入本地
+async function verifyCDK() {
+    const input = document.getElementById('cdkInput').value.trim();
+    if(!input) return updateStatus("请输入激活码！", true);
+    
+    updateStatus("正在云端安全验证...");
+    
+    try {
+        // 向 Vercel 后端发送卡密进行比对
+        const res = await fetch(KEYS_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                cardCode: input,
+                prompt: "验证激活" 
+            })
+        });
+        
+        const data = await res.json();
+        
+        // 如果后端没有返回 error，说明卡密和 Vercel 环境变量里设置的一致
+        if(!data.error) {
+            localStorage.setItem('laowang_vip', 'true');
+            // 存入本地，下次打开就不用输了
+            localStorage.setItem('userCardCode', input); 
+            updateStatus("✅ 激活成功！");
+            setTimeout(() => { showLoginForm(); }, 1000);
+        } else {
+            updateStatus("❌ 授权码错误，请重新输入", true);
+        }
+    } catch(e) { 
+        updateStatus("网络错误或服务部署中", true); 
+    }
+}
+function showLoginForm() {
+    document.getElementById('authForm').style.display = 'none';
+    document.getElementById('loginForm').style.display = 'block';
+    document.getElementById('menuButtons').style.display = 'none';
+}
+
+// 改动点：只清空账号登录，不清空卡密激活
+function logout() {
+    currentUser = null;
+    currentToken = null;
+    updateStatus("已安全退出游戏账号");
+    showLoginForm(); 
+}
+
+// 页面加载逻辑
+document.addEventListener("DOMContentLoaded", () => {
+    if (localStorage.getItem('laowang_vip') === 'true') {
+        showLoginForm(); 
+    } else {
+        document.getElementById('authForm').style.display = 'block';
+    }
+});
+
+// 登录逻辑
+async function loginFirebase() {
+    const email = document.getElementById('email').value;
+    const password = document.getElementById('password').value;
+    if(!email || !password) return updateStatus("邮箱密码不能为空", true);
+    updateStatus("正在登录游戏服务器...");
+    try {
+        const response = await fetch(`https://www.googleapis.com/identitytoolkit/v3/relyingparty/verifyPassword?key=${FIREBASE_API_KEY}`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email, password, returnSecureToken: true })
+        });
+        const data = await response.json();
+        if(data.idToken) {
+            currentUser = email;
+            currentToken = data.idToken;
+            updateStatus(`✅ 欢迎, ${email}`);
+            document.getElementById('loginForm').style.display = 'none';
+            document.getElementById('menuButtons').style.display = 'block';
+        } else {
+            updateStatus("账号密码错误", true);
+        }
+    } catch(err) { updateStatus("登录失败", true); }
+}
+
+// 功能函数保持原样
+async function kingRank() {
+  if(!currentToken) return;
+  updateStatus(`👑 正在设置皇冠...`);
+  const ratingData = { "cars": 100000, "car_fix": 100000, "car_collided": 100000, "car_exchange": 100000, "car_trade": 100000, "car_wash": 100000, "slicer_cut": 100000, "drift_max": 100000, "drift": 100000, "cargo": 100000, "delivery": 100000, "taxi": 100000, "levels": 100000, "gifts": 100000, "fuel": 100000, "offroad": 100000, "speed_banner": 100000, "reactions": 100000, "police": 100000, "run": 100000, "real_estate": 100000, "t_distance": 100000, "treasure": 100000, "block_post": 100000, "push_ups": 100000, "burnt_tire": 100000, "passanger_distance": 100000, "time": 10000000000, "race_win": 3000 };
+  try {
+      const response = await fetch(RANK_URL, {
+          method: "POST",
+          headers: { "Authorization": `Bearer ${currentToken}`, "Content-Type": "application/json" },
+          body: JSON.stringify({ "data": JSON.stringify({ RatingData: ratingData }) })
+      });
+      if (response.ok) updateStatus(`✅ 皇冠设置成功！`);
+      else updateStatus(`❌ 接口错误`, true);
+  } catch (e) { updateStatus(`❌ 运行错误`, true); }
+}
+
+async function changeEmail() {
+    const newEmail = prompt("新邮箱:");
+    if(!newEmail) return;
+    fetch(`https://identitytoolkit.googleapis.com/v1/accounts:update?key=${FIREBASE_API_KEY}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ idToken: currentToken, email: newEmail, returnSecureToken: true })
+    }).then(r => r.json()).then(data => {
+        if(data.email) { currentUser = data.email; updateStatus("✅ 邮箱已修改"); }
+        else updateStatus("❌ 修改失败", true);
+    });
+}
+
+async function changePassword() {
+    const newPassword = prompt("新密码:");
+    if(!newPassword) return;
+    fetch(`https://identitytoolkit.googleapis.com/v1/accounts:update?key=${FIREBASE_API_KEY}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ idToken: currentToken, password: newPassword, returnSecureToken: true })
+    }).then(r => r.json()).then(data => {
+        if(data.email) updateStatus("✅ 密码已修改");
+        else updateStatus("❌ 修改失败", true);
+    });
+}
+</script>
+</body>
+</html>

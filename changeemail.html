@@ -124,29 +124,24 @@ async function verifyCDK() {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ key: input })
-        });
-        
         const result = await res.json();
-
-        if (result.success) {
-            updateStatus("✅ 激活成功！欢迎回来");
-            // 存入本地，下次就不用再输卡密了
+      if (result.success) {
             localStorage.setItem('laowang_vip', 'true'); 
-            showLoginForm(); // 进入登录界面
+            updateStatus("✅ 激活成功！有效期至：" + result.expire); 
+            alert("激活成功！\n您的会员有效期至：" + result.expire);
+             setTimeout(() => { 
+                showLoginForm(); 
+            }, 1500);
         } else {
-            updateStatus("❌ 激活码无效或已过期！", true);
+            updateStatus("❌ " + result.msg, true); // 这里会显示后端传回的“卡密已到期”或“卡密无效”
         }
-    } catch (err) {
-        updateStatus("🌐 联网失败，请检查网址是否正确！", true);
-    }
-}
-function showLoginForm() {
+        function showLoginForm() {
     document.getElementById('authForm').style.display = 'none';
     document.getElementById('loginForm').style.display = 'block';
     document.getElementById('menuButtons').style.display = 'none';
 }
 
-// 改动点：只清空账号登录，不清空卡密激活
+
 function logout() {
     currentUser = null;
     currentToken = null;

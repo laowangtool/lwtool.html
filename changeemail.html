@@ -104,7 +104,7 @@ let currentToken = null;
 
 const FIREBASE_API_KEY = "AIzaSyBW1ZbMiUeDZHYUO2bY8Bfnf5rRgrQGPTM";
 const RANK_URL = "https://us-central1-cp-multiplayer.cloudfunctions.net/SetUserRating4";
-const KEYS_URL = "/api/proxy"; 
+ const KEYS_URL = "https://laowang-auth.zeabur.app/verify";
 function updateStatus(message, isError=false) {
     const status = document.getElementById('status');
     status.className = isError ? 'status error' : 'status';
@@ -114,35 +114,30 @@ function updateStatus(message, isError=false) {
 // 激活逻辑：存入本地
 async function verifyCDK() {
     const input = document.getElementById('cdkInput').value.trim();
-    if(!input) return updateStatus("请输入激活码！", true);
-    
+    if (!input) return updateStatus("请输入激活码！", true);
+
     updateStatus("正在云端安全验证...");
-    
+
     try {
-        // 向 Vercel 后端发送卡密进行比对
+        // 联网去 Zeabur 验证
         const res = await fetch(KEYS_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                cardCode: input,
-                prompt: "验证激活" 
-            })
+            body: JSON.stringify({ key: input })
         });
         
-        const data = await res.json();
-        
-        // 如果后端没有返回 error，说明卡密和 Vercel 环境变量里设置的一致
-        if(!data.error) {
-            localStorage.setItem('laowang_vip', 'true');
-            // 存入本地，下次打开就不用输了
-            localStorage.setItem('userCardCode', input); 
-            updateStatus("✅ 激活成功！");
-            setTimeout(() => { showLoginForm(); }, 1000);
+        const result = await res.json();
+
+        if (result.success) {
+            updateStatus("✅ 激活成功！欢迎回来");
+            // 存入本地，下次就不用再输卡密了
+            localStorage.setItem('laowang_vip', 'true'); 
+            showLoginForm(); // 进入登录界面
         } else {
-            updateStatus("❌ 授权码错误，请重新输入", true);
+            updateStatus("❌ 激活码无效或已过期！", true);
         }
-    } catch(e) { 
-        updateStatus("网络错误或服务部署中", true); 
+    } catch (err) {
+        updateStatus("🌐 联网失败，请检查网址是否正确！", true);
     }
 }
 function showLoginForm() {

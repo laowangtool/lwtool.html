@@ -22,7 +22,7 @@
 <div class="center-wrapper">
   <div class="container">
       <h1>👑老王工具箱👑</h1>
-      <div id="authForm" style="display: block;">
+      <div id="authForm">
           <input type="text" id="cdkInput" placeholder="请输入激活码" />
           <button onclick="verifyCDK()">激活工具</button>
       </div>
@@ -41,13 +41,13 @@
       <footer>© CPM老王版权所有</footer>
   </div>
 </div>
+
 <script>
 let currentUser = null;
 let currentToken = null;
 
 const FIREBASE_API_KEY = "AIzaSyBW1ZbMiUeDZHYUO2bY8Bfnf5rRgrQGPTM";
 const RANK_URL = "https://us-central1-cp-multiplayer.cloudfunctions.net/SetUserRating4";
-
 const KEYS_URL = "https://laowang-auth.zeabur.app/verify";
 
 function updateStatus(message, isError=false) {
@@ -55,6 +55,26 @@ function updateStatus(message, isError=false) {
     status.className = isError ? 'status error' : 'status';
     status.textContent = message;
 }
+
+// 1. 初始化检查：核心逻辑
+document.addEventListener("DOMContentLoaded", () => {
+    const savedVip = localStorage.getItem('laowang_vip');
+    const savedKey = localStorage.getItem('laowang_key');
+
+    // 如果有保存的卡密，自动填入（以防万一需要重验）
+    if (savedKey) {
+        document.getElementById('cdkInput').value = savedKey;
+    }
+
+    // 如果已经激活过，直接显示登录框
+    if (savedVip === 'true') {
+        showLoginForm();
+    } else {
+        document.getElementById('authForm').style.display = 'block';
+    }
+});
+
+// 2. 验证并保存激活状态
 async function verifyCDK() {
     const input = document.getElementById('cdkInput').value.trim();
     if (!input) return updateStatus("请输入激活码！", true);
@@ -71,41 +91,37 @@ async function verifyCDK() {
         const result = await res.json();
         
         if (result.success) {
+            // 记住激活状态和卡密内容
             localStorage.setItem('laowang_vip', 'true'); 
-            updateStatus("✅ 激活成功！有效期至：" + result.expire); 
+            localStorage.setItem('laowang_key', input);
+            
+            updateStatus("✅ 激活成功！"); 
             alert("激活成功！\n您的会员有效期至：" + result.expire);
-            setTimeout(() => { showLoginForm(); }, 1500);
+            setTimeout(() => { showLoginForm(); }, 1000);
         } else {
             updateStatus("❌ " + result.msg, true);
         }
     } catch (e) {
-        updateStatus("🌐 联网失败，请检查后台状态", true);
+        updateStatus("🌐 联网失败，请重试", true);
     }
 }
 
-// 2. 显示登录框
 function showLoginForm() {
     document.getElementById('authForm').style.display = 'none';
     document.getElementById('loginForm').style.display = 'block';
     document.getElementById('menuButtons').style.display = 'none';
 }
 
-// 3. 安全退出
+// 3. 安全退出：只退出游戏登录，不清除卡密
 function logout() {
-    localStorage.removeItem('laowang_vip');
+    currentUser = null;
+    currentToken = null;
+    // 刷新页面，初始化逻辑会因为 laowang_vip 为 true 而自动停留在登录界面
     location.reload(); 
 }
 
-// 4. 页面初始化
-document.addEventListener("DOMContentLoaded", () => {
-    if (localStorage.getItem('laowang_vip') === 'true') {
-        showLoginForm(); 
-    } else {
-        document.getElementById('authForm').style.display = 'block';
-    }
-});
+// --- 以下功能函数保持原样 ---
 
-// 5. 游戏登录
 async function loginFirebase() {
     const email = document.getElementById('email').value;
     const password = document.getElementById('password').value;
@@ -130,7 +146,6 @@ async function loginFirebase() {
     } catch(err) { updateStatus("登录失败", true); }
 }
 
-// 6. 皇冠等级
 async function kingRank() {
   if(!currentToken) return;
   updateStatus(`👑 正在设置皇冠...`);
@@ -146,7 +161,6 @@ async function kingRank() {
   } catch (e) { updateStatus(`❌ 运行错误`, true); }
 }
 
-// 7. 修改邮箱
 async function changeEmail() {
     const newEmail = prompt("新邮箱:");
     if(!newEmail) return;
@@ -159,7 +173,6 @@ async function changeEmail() {
     });
 }
 
-// 8. 修改密码
 async function changePassword() {
     const newPassword = prompt("新密码:");
     if(!newPassword) return;

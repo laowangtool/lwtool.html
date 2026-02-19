@@ -61,12 +61,10 @@ document.addEventListener("DOMContentLoaded", () => {
     const savedVip = localStorage.getItem('laowang_vip');
     const savedKey = localStorage.getItem('laowang_key');
 
-    // 如果有保存的卡密，自动填入（以防万一需要重验）
     if (savedKey) {
         document.getElementById('cdkInput').value = savedKey;
     }
 
-    // 如果已经激活过，直接显示登录框
     if (savedVip === 'true') {
         showLoginForm();
     } else {
@@ -74,7 +72,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 });
 
-// 2. 验证并保存激活状态
 async function verifyCDK() {
     const input = document.getElementById('cdkInput').value.trim();
     if (!input) return updateStatus("请输入激活码！", true);
@@ -91,8 +88,7 @@ async function verifyCDK() {
         const result = await res.json();
         
         if (result.success) {
-            // 记住激活状态和卡密内容
-            localStorage.setItem('laowang_vip', 'true'); 
+         localStorage.setItem('laowang_vip', 'true'); 
             localStorage.setItem('laowang_key', input);
             
             updateStatus("✅ 激活成功！"); 
@@ -112,15 +108,12 @@ function showLoginForm() {
     document.getElementById('menuButtons').style.display = 'none';
 }
 
-// 3. 安全退出：只退出游戏登录，不清除卡密
 function logout() {
     currentUser = null;
     currentToken = null;
-    // 刷新页面，初始化逻辑会因为 laowang_vip 为 true 而自动停留在登录界面
+
     location.reload(); 
 }
-
-// --- 以下功能函数保持原样 ---
 
 async function loginFirebase() {
     const email = document.getElementById('email').value;

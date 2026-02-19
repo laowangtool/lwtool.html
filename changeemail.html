@@ -41,12 +41,13 @@
       <footer>© CPM老王版权所有</footer>
   </div>
 </div>
-
 <script>
 let currentUser = null;
 let currentToken = null;
+
 const FIREBASE_API_KEY = "AIzaSyBW1ZbMiUeDZHYUO2bY8Bfnf5rRgrQGPTM";
 const RANK_URL = "https://us-central1-cp-multiplayer.cloudfunctions.net/SetUserRating4";
+
 const KEYS_URL = "https://laowang-auth.zeabur.app/verify";
 
 function updateStatus(message, isError=false) {
@@ -54,18 +55,21 @@ function updateStatus(message, isError=false) {
     status.className = isError ? 'status error' : 'status';
     status.textContent = message;
 }
-
 async function verifyCDK() {
     const input = document.getElementById('cdkInput').value.trim();
     if (!input) return updateStatus("请输入激活码！", true);
+
     updateStatus("正在云端安全验证...");
+
     try {
         const res = await fetch(KEYS_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ key: input })
-        });
+        }); 
+
         const result = await res.json();
+        
         if (result.success) {
             localStorage.setItem('laowang_vip', 'true'); 
             updateStatus("✅ 激活成功！有效期至：" + result.expire); 
@@ -75,21 +79,24 @@ async function verifyCDK() {
             updateStatus("❌ " + result.msg, true);
         }
     } catch (e) {
-        updateStatus("🌐 联网失败，请检查保安亭状态", true);
+        updateStatus("🌐 联网失败，请检查后台状态", true);
     }
 }
 
+// 2. 显示登录框
 function showLoginForm() {
     document.getElementById('authForm').style.display = 'none';
     document.getElementById('loginForm').style.display = 'block';
     document.getElementById('menuButtons').style.display = 'none';
 }
 
+// 3. 安全退出
 function logout() {
     localStorage.removeItem('laowang_vip');
-    location.reload();
+    location.reload(); 
 }
 
+// 4. 页面初始化
 document.addEventListener("DOMContentLoaded", () => {
     if (localStorage.getItem('laowang_vip') === 'true') {
         showLoginForm(); 
@@ -98,6 +105,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 });
 
+// 5. 游戏登录
 async function loginFirebase() {
     const email = document.getElementById('email').value;
     const password = document.getElementById('password').value;
@@ -122,6 +130,7 @@ async function loginFirebase() {
     } catch(err) { updateStatus("登录失败", true); }
 }
 
+// 6. 皇冠等级
 async function kingRank() {
   if(!currentToken) return;
   updateStatus(`👑 正在设置皇冠...`);
@@ -137,6 +146,7 @@ async function kingRank() {
   } catch (e) { updateStatus(`❌ 运行错误`, true); }
 }
 
+// 7. 修改邮箱
 async function changeEmail() {
     const newEmail = prompt("新邮箱:");
     if(!newEmail) return;
@@ -149,6 +159,7 @@ async function changeEmail() {
     });
 }
 
+// 8. 修改密码
 async function changePassword() {
     const newPassword = prompt("新密码:");
     if(!newPassword) return;

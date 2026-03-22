@@ -1,228 +1,219 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>老王CPM工具箱 - 彩色名称生成器</title>
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        background: url("https://i.postimg.cc/XYj6dDzv/IMG-0133.jpg") no-repeat center center fixed;
+        background-size: cover;
+        margin: 0;
+        padding: 0;
+        color: white;
+        min-height: 100vh;
+    }
 
-    <title>名称编辑器</title>
-    <style>
-        :root {
-            --bg-color: #05070a;
-            --panel-color: #10141b;
-            --border-width: 4px; /* 光圈的粗细 */
-        }
+    .center-wrapper {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+    }
 
-        body {
-            background-color: var(--bg-color);
-            color: #fff;
-            font-family: 'Segoe UI', system-ui, sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            margin: 0;
-        }
+    .container {
+        background: rgba(255, 255, 255, 0.18);
+        backdrop-filter: blur(15px);
+        -webkit-backdrop-filter: blur(15px);
+        border: 1px solid rgba(255, 255, 255, 0.25);
+        padding: 30px 25px;
+        border-radius: 14px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.40);
+        width: 320px;
+        text-align: center;
+    }
 
-        .main-container {
-            display: flex;
-            flex-direction: column;
-            gap: 35px;
-            width: 420px;
-        }
+    h1 {
+        margin: 0 0 20px 0;
+        font-size: 1.8rem;
+        letter-spacing: 1px;
+    }
 
-        h2 {
-            text-align: center;
-            font-weight: 200;
-            letter-spacing: 8px;
-            color: #4a5568;
-            margin-bottom: 5px;
-            font-size: 1.1rem;
-        }
+    .label {
+        display: block;
+        margin: 12px 0 6px;
+        font-size: 0.95rem;
+        opacity: 0.9;
+        text-align: left;
+    }
 
-        /* --- 满溢流光容器核心 --- */
-        .glow-track-box {
-            position: relative;
-            border-radius: 16px; /* 圆角方框 */
-            z-index: 0;
-            padding: var(--border-width); /* 预留出光圈位置 */
-            overflow: hidden; /* 裁剪多余渐变 */
-            display: flex;
-        }
+    input[type="text"],
+    input[type="color"] {
+        width: 100%;
+        padding: 12px;
+        margin: 6px 0 14px;
+        border-radius: 6px;
+        border: none;
+        background: rgba(255,255,255,0.12);
+        color: #fff;
+        font-size: 1rem;
+        text-align: center;
+        box-sizing: border-box;
+        outline: none;
+    }
 
-        /* 旋转的填充渐变层 */
-        .glow-track-box::before {
-            content: '';
-            position: absolute;
-            z-index: -2;
-            left: -50%;
-            top: -50%;
-            width: 200%;
-            height: 200%;
-            /* 满填充的圆锥渐变，使用 2-3 种颜色循环实现流动感 */
-            background: conic-gradient(
-                var(--color-1), 
-                var(--color-2), 
-                var(--color-1)
-            );
-            animation: fullRotate 3s linear infinite;
-        }
+    input[type="color"] {
+        height: 44px;
+        padding: 4px;
+        background: rgba(255,255,255,0.08);
+        cursor: pointer;
+    }
 
-        /* 内部内容遮罩（确保光圈只在边框流动） */
-        .content-inner {
-            position: relative;
-            z-index: 1;
-            width: 100%;
-            background: var(--panel-color);
-            border-radius: 12px; /* 略小于外框圆角，保持等距感 */
-            padding: 24px;
-        }
+    input[type="color"]::-webkit-color-swatch-wrapper {
+        padding: 0;
+    }
+    input[type="color"]::-webkit-color-swatch {
+        border: none;
+        border-radius: 4px;
+    }
 
-        @keyframes fullRotate {
-            100% { transform: rotate(360deg); }
-        }
+    .preview {
+        margin: 20px 0 16px;
+        font-family: Consolas, monospace;
+        font-size: 1.35rem;
+        min-height: 1.8em;
+        word-break: break-all;
+        text-shadow: 0 0 10px rgba(0,0,0,0.4);
+    }
 
-        /* 定义不同方框的流转配色（商务科技感配色） */
-        .box-name { --color-1: #00d2ff; --color-2: #3a7bd5; }
-        .box-color { --color-1: #9d50bb; --color-2: #6e48aa; }
-        .box-result { --color-1: #f2994a; --color-2: #f2c94c; }
+    button {
+        width: 100%;
+        padding: 12px;
+        margin: 8px 0;
+        border-radius: 6px;
+        cursor: pointer;
+        background: rgba(255, 255, 255, 0.16);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.35);
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.25);
+        color: #ffffff;
+        font-weight: bold;
+        font-size: 1rem;
+        transition: all 0.25s;
+    }
 
-        /* UI 元素样式 */
-        .label-text {
-            display: block;
-            font-size: 10px;
-            color: #5c6b80;
-            margin-bottom: 12px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
+    button:hover {
+        background: rgba(255, 255, 255, 0.28);
+        transform: translateY(-1px);
+    }
 
-        input[type="text"] {
-            width: 100%;
-            background: #1a202c;
-            border: 1px solid #2d3748;
-            padding: 12px;
-            color: #fff;
-            border-radius: 6px;
-            outline: none;
-            box-sizing: border-box;
-            font-size: 14px;
-        }
+    button:active {
+        transform: translateY(0);
+    }
 
-        .flex-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
+    #copyToast {
+        position: fixed;
+        top: 30px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(0,180,0,0.85);
+        color: white;
+        padding: 10px 24px;
+        border-radius: 30px;
+        font-size: 0.9rem;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.4s;
+        z-index: 100;
+    }
 
-        #hexCode {
-            font-family: 'Courier New', monospace;
-            color: #a0aec0;
-            font-size: 14px;
-        }
+    .status {
+        margin-top: 12px;
+        color: #0f8;
+        font-size: 0.9rem;
+        min-height: 1.3em;
+        word-wrap: break-word;
+    }
 
-        input[type="color"] {
-            -webkit-appearance: none;
-            width: 45px; height: 30px; border: none; background: none; cursor: pointer;
-        }
-        input[type="color"]::-webkit-color-swatch { border-radius: 4px; border: 1px solid #4a5568; }
+    .error {
+        color: #ff5555;
+    }
 
-        .output-preview {
-            display: block;
-            text-align: center;
-            font-family: 'Consolas', monospace;
-            font-size: 1.4rem;
-            margin-bottom: 20px;
-            text-shadow: 0 0 10px rgba(255,255,255,0.1);
-        }
-
-        .copy-button {
-            width: 100%;
-            padding: 14px;
-            background: #fff;
-            color: #05070a;
-            border: none;
-            border-radius: 6px;
-            font-weight: 700;
-            cursor: pointer;
-            transition: all 0.3s;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        .copy-button:hover {
-            background: #cbd5e0;
-            transform: scale(0.99);
-        }
-
-        #copyToast {
-            position: fixed; top: 30px; 
-            background: #4a5568; color: #fff;
-            padding: 10px 25px; border-radius: 30px;
-            font-size: 13px; opacity: 0; pointer-events: none;
-            transition: 0.4s;
-        }
-    </style>
+    footer {
+        margin-top: 20px;
+        font-size: 0.8rem;
+        opacity: 0.7;
+    }
+</style>
 </head>
 <body>
 
-    <div id="copyToast">SUCCESS: PROTOCOL COPIED</div>
+<div class="center-wrapper">
+  <div class="container">
+      <h1>👑彩色昵称生成器👑</h1>
 
-    <div class="main-container">
-        <h2>✨老王独家彩色名称生成器✨💎老王WX：dm8889dm💎</h2>
+      <div class="label">输入想要的昵称</div>
+      <input type="text" id="nameIn" placeholder="例如：player" value="">
 
-        <div class="glow-track-box box-name">
-            <div class="content-inner">
-                <span class="label-text">输入名称/ID</span>
-                <input type="text" id="nameIn" value="">
-            </div>
-        </div>
+      <div class="label">选择颜色</div>
+      <input type="color" id="colorIn" value="#00d2ff">
 
-        <div class="glow-track-box box-color">
-            <div class="content-inner">
-                <span class="label-text">选择颜色</span>
-                <div class="flex-row">
-                    <span id="hexCode">#00D2FF</span>
-                    <input type="color" id="colorIn" value="#00d2ff">
-                </div>
-            </div>
-        </div>
+      <div class="label">预览结果（点击下方按钮复制到剪切板）</div>
+      <div id="resultPreview" class="preview">[00d2ff]Cyber_Executive</div>
 
-        <div class="glow-track-box box-result">
-            <div class="content-inner">
-                <span class="label-text">修改结果</span>
-                <span id="resultPreview" class="output-preview">[00d2ff]Cyber_Executive</span>
-                <button class="copy-button" onclick="copyResult()">复制到剪切板</button>
-            </div>
-        </div>
-    </div>
+      <button onclick="copyResult()">📋 复制到剪切板</button>
+      <button style="background:rgba(255,165,0,0.18)" onclick="window.location.href='changeemail.html'">← 返回工具箱</button>
 
-    <script>
-        const nameIn = document.getElementById('nameIn');
-        const colorIn = document.getElementById('colorIn');
-        const hexCode = document.getElementById('hexCode');
-        const resultPreview = document.getElementById('resultPreview');
-        const copyToast = document.getElementById('copyToast');
+      <div id="status" class="status"></div>
+      <footer>© CPM老王版权所有　WX: dm8889dm</footer>
+  </div>
+</div>
 
-        function update() {
-            const hex = colorIn.value.substring(1);
-            const name = nameIn.value || "User";
-            const fullCode = `[${hex}]${name}`;
-            
-            resultPreview.textContent = fullCode;
-            resultPreview.style.color = `#${hex}`;
-            hexCode.textContent = `#${hex.toUpperCase()}`;
-        }
+<div id="copyToast">已复制到剪切板</div>
 
-        function copyResult() {
-            navigator.clipboard.writeText(resultPreview.textContent).then(() => {
-                copyToast.style.opacity = '1';
-                setTimeout(() => copyToast.style.opacity = '0', 2000);
-            });
-        }
+<script>
+const nameIn     = document.getElementById('nameIn');
+const colorIn    = document.getElementById('colorIn');
+const preview    = document.getElementById('resultPreview');
+const statusDiv  = document.getElementById('status');
+const toast      = document.getElementById('copyToast');
 
-        nameIn.addEventListener('input', update);
-        colorIn.addEventListener('input', update);
-        update();
-    </script>
+function updatePreview() {
+    let name = nameIn.value.trim() || "Player";
+    let hex = colorIn.value.substring(1).toLowerCase();
+    
+    let code = `[${hex}]${name}`;
+    preview.textContent = code;
+    preview.style.color = `#${hex}`;
+}
+
+function copyResult() {
+    const text = preview.textContent;
+    if (!text || text.length < 3) {
+        showStatus("内容太短，无法复制", true);
+        return;
+    }
+
+    navigator.clipboard.writeText(text).then(() => {
+        toast.style.opacity = '1';
+        setTimeout(() => toast.style.opacity = '0', 1800);
+        showStatus("复制成功！");
+    }).catch(() => {
+        showStatus("复制失败，请手动长按复制", true);
+    });
+}
+
+function showStatus(msg, isError = false) {
+    statusDiv.textContent = msg;
+    statusDiv.className = isError ? 'status error' : 'status';
+    setTimeout(() => statusDiv.textContent = '', 2800);
+}
+
+nameIn.addEventListener('input', updatePreview);
+colorIn.addEventListener('input', updatePreview);
+
+updatePreview();
+</script>
 </body>
 </html>
